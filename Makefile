@@ -19,7 +19,7 @@ pruebas: rw prueba_verificador
 	./prueba_verificador
 	bash pruebas_parametros.sh
 
-# Experimentos (ver readme.txt). Escriben en resultados/.
+# Experimentos (ver README.md). Escriben en resultados/.
 e1: rw
 	bash experimentos_e1.sh
 
