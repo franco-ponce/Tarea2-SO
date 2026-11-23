@@ -1,0 +1,19 @@
+modo=atomic
+politica=escritores
+L=8 E=1 K=200 dur_lec_us=1000 dur_esc_us=100 traza=NO
+operaciones=1800 lecturas=1600 escrituras=200
+version_final=200 (esperado 200)
+doble_version_final=400 (esperado 400)
+inconsistencias=0
+violaciones_exclusion=0
+max_lectoras_simultaneas=8
+tiempo_pared_ms=413.945
+tiempo_creacion_hebras_ms=0.736
+tiempo_cpu_ms=1516.606
+espera_lectoras_prom_us=926.824 espera_lectoras_max_us=21515.454
+espera_escritoras_prom_us=1000.394 espera_escritoras_max_us=5301.332
+palabra_final=0x0
+fallos_lectoras: recurso_ocupado=382887 escritoras_esperando=1056631 cas_fallido=276
+fallos_escritoras: recurso_ocupado=244016 cas_fallido=0
+fallos_total=1683810
+correcto=SI

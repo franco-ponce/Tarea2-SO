@@ -1,0 +1,18 @@
+modo=cond
+politica=escritores
+L=6 E=2 K=10 dur_lec_us=200 dur_esc_us=500 traza=SI
+operaciones=80 lecturas=60 escrituras=20
+version_final=20 (esperado 20)
+doble_version_final=40 (esperado 40)
+inconsistencias=0
+violaciones_exclusion=0
+max_lectoras_simultaneas=6
+tiempo_pared_ms=19.670
+tiempo_creacion_hebras_ms=0.638
+tiempo_cpu_ms=6.398
+espera_lectoras_prom_us=1579.821 espera_lectoras_max_us=9197.173
+espera_escritoras_prom_us=477.240 espera_escritoras_max_us=6346.733
+anotaciones_traza=240 (esperado 240)
+politica_ok=SI
+evidencia=20 (lectoras que pidieron con escritoras pendientes)
+correcto=SI

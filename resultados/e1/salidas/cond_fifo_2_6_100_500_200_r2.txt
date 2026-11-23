@@ -1,0 +1,18 @@
+modo=cond
+politica=fifo
+L=2 E=6 K=100 dur_lec_us=500 dur_esc_us=200 traza=SI
+operaciones=800 lecturas=200 escrituras=600
+version_final=600 (esperado 600)
+doble_version_final=1200 (esperado 1200)
+inconsistencias=0
+violaciones_exclusion=0
+max_lectoras_simultaneas=2
+tiempo_pared_ms=277.157
+tiempo_creacion_hebras_ms=0.636
+tiempo_cpu_ms=51.814
+espera_lectoras_prom_us=2137.595 espera_lectoras_max_us=2391.399
+espera_escritoras_prom_us=2435.639 espera_escritoras_max_us=2659.221
+anotaciones_traza=2400 (esperado 2400)
+politica_ok=SI
+evidencia=100 (lectoras que entraron con otra lectora activa)
+correcto=SI

@@ -1,0 +1,24 @@
+15 hebra=1 L Sale turno=-1
+16 hebra=1 L Pide turno=-1
+17 hebra=1 L Entra turno=-1
+18 hebra=6 E Pide turno=-1
+19 hebra=2 L Sale turno=-1
+20 hebra=2 L Pide turno=-1
+21 hebra=3 L Sale turno=-1
+22 hebra=3 L Pide turno=-1
+23 hebra=7 E Pide turno=-1
+24 hebra=4 L Sale turno=-1
+25 hebra=4 L Pide turno=-1
+26 hebra=5 L Sale turno=-1
+27 hebra=5 L Pide turno=-1
+28 hebra=0 L Sale turno=-1
+29 hebra=0 L Pide turno=-1
+30 hebra=1 L Sale turno=-1
+31 hebra=1 L Pide turno=-1
+32 hebra=6 E Entra turno=-1
+33 hebra=6 E Sale turno=-1
+...
+62 hebra=7 E Sale turno=-1
+63 hebra=0 L Entra turno=-1
+64 hebra=1 L Entra turno=-1
+65 hebra=2 L Entra turno=-1

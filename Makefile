@@ -19,7 +19,17 @@ pruebas: rw prueba_verificador
 	./prueba_verificador
 	bash pruebas_parametros.sh
 
+# Experimentos (ver readme.txt). Escriben en resultados/.
+e1: rw
+	bash experimentos_e1.sh
+
+e2: rw
+	bash experimentos_e2.sh
+
+fragmentos: rw
+	bash fragmentos_traza.sh
+
 clean:
 	rm -f rw rw_tsan prueba_verificador
 
-.PHONY: clean pruebas
+.PHONY: clean pruebas e1 e2 fragmentos
