@@ -85,11 +85,6 @@ static bool leer_parametros(int argc, char** argv, Parametros& p) {
     else if (pol == "fifo") p.politica = Politica::Fifo;
     else { std::fprintf(stderr, "Error: política desconocida '%s'.\n", argv[2]); return false; }
 
-    if (p.politica == Politica::Fifo) {  // provisorio, hasta la Etapa 3
-        std::fprintf(stderr, "Error: la política fifo aún no está implementada.\n");
-        return false;
-    }
-
     if (p.modo == Modo::Atomic && p.politica != Politica::Escritores) {
         std::fprintf(stderr, "Error: el modo atomic solo implementa la política escritores.\n");
         return false;

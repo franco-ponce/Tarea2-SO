@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 
 // Reglas de monitor:
@@ -34,13 +35,23 @@ private:
     long lectoras_esperando = 0;    // pidieron y no han entrado
     long escritoras_esperando = 0;  // pidieron y no han entrado
 
-    // Variables de condición: una por tipo de hebra.
+    // Variables de condición: una por tipo de hebra (políticas Lectores y Escritores).
     std::condition_variable cv_lectoras;
     std::condition_variable cv_escritoras;
 
-    // Condiciones de admisión según la política (se llaman con m adquirido).
-    bool lectora_puede_entrar() const;
-    bool escritora_puede_entrar() const;
+    // Política FIFO (R5).
+    long siguiente_turno = 0;  // turno que recibirá la próxima solicitud (consecutivos desde 0)
+    long turno_en_atencion = 0;  // menor turno que aún no entra: todas las anteriores ya entraron
+    // Aviso por solicitud: cada solicitud FIFO que espera registra aquí su propia variable de
+    // condición (vive en la pila de su hebra), indexada por su turno.
+    std::unordered_map<long, std::condition_variable*> espera_por_turno;
 
-    void anotar(Tipo t, Accion a, long turno = -1);
+    // Condiciones de admisión según la política (se llaman con m adquirido).
+    bool lectora_puede_entrar(long turno) const;
+    bool escritora_puede_entrar(long turno) const;
+
+    // FIFO: despierta a la solicitud cuyo turno es turno_en_atencion, si está esperando.
+    void avisar_turno_en_atencion();
+
+    void anotar(Tipo t, Accion a, long turno);
 };
