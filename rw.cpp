@@ -3,6 +3,7 @@
 // Uso: ./rw <modo> <politica> <L> <E> <K> <dur_lec_us> <dur_esc_us> [notraza]
 
 #include "comun.h"
+#include "monitor_rw.h"
 
 #include <algorithm>
 #include <atomic>
@@ -84,6 +85,11 @@ static bool leer_parametros(int argc, char** argv, Parametros& p) {
     else if (pol == "fifo") p.politica = Politica::Fifo;
     else { std::fprintf(stderr, "Error: política desconocida '%s'.\n", argv[2]); return false; }
 
+    if (p.politica == Politica::Fifo) {  // provisorio, hasta la Etapa 3
+        std::fprintf(stderr, "Error: la política fifo aún no está implementada.\n");
+        return false;
+    }
+
     if (p.modo == Modo::Atomic && p.politica != Politica::Escritores) {
         std::fprintf(stderr, "Error: el modo atomic solo implementa la política escritores.\n");
         return false;
@@ -126,9 +132,8 @@ static bool leer_parametros(int argc, char** argv, Parametros& p) {
 }
 
 // ---------------------------------------------------------------------------
-// Control provisorio (SOLO ETAPA 1): exclusión total con mutex + variable de
-// condición, para probar el arnés antes de tener MonitorRW y ControlAtomicoRW.
-// Se reemplaza en las etapas siguientes.
+// Control provisorio: exclusión total con mutex + variable de condición. Lo usa
+// el modo atomic hasta que exista ControlAtomicoRW (Etapa 5).
 // ---------------------------------------------------------------------------
 
 class ControlProvisorio : public ControlRW {
@@ -153,8 +158,15 @@ private:
     bool ocupado = false;
 };
 
-static std::unique_ptr<ControlRW> crear_control(const Parametros& p) {
-    (void)p;
+// Crea el control según el modo. Si es un monitor, deja además un puntero a él en
+// 'monitor' para poder leer la traza al final.
+static std::unique_ptr<ControlRW> crear_control(const Parametros& p, MonitorRW*& monitor) {
+    monitor = nullptr;
+    if (p.modo == Modo::Cond) {
+        auto mon = std::make_unique<MonitorRW>(p.politica, p.con_traza);
+        monitor = mon.get();
+        return mon;
+    }
     return std::make_unique<ControlProvisorio>();
 }
 
@@ -266,7 +278,8 @@ int main(int argc, char** argv) {
     const int E = static_cast<int>(p.E);
     const int N = L + E;
 
-    std::unique_ptr<ControlRW> ctl = crear_control(p);
+    MonitorRW* monitor = nullptr;
+    std::unique_ptr<ControlRW> ctl = crear_control(p, monitor);
     Registro reg;
     Diagnostico diag;
     std::vector<ResultadoHebra> resultados(N);
@@ -357,6 +370,23 @@ int main(int argc, char** argv) {
         std::printf("fallos_total=%ld\n",
                     fallos_lec.recurso_ocupado + fallos_lec.escritoras_esperando + fallos_lec.cas_fallido +
                     fallos_esc.recurso_ocupado + fallos_esc.cas_fallido);
+    }
+    if (monitor != nullptr && p.con_traza) {
+        std::vector<AnotacionTraza> traza = monitor->obtener_traza();
+        std::printf("anotaciones_traza=%zu (esperado %ld)\n", traza.size(), 3 * (p.L + p.E) * p.K);
+        // Volcado opcional de la traza (para inspeccionarla a mano): RW_VOLCAR_TRAZA=archivo
+        if (const char* ruta = std::getenv("RW_VOLCAR_TRAZA")) {
+            if (FILE* f = std::fopen(ruta, "w")) {
+                const char* acciones[] = {"Pide", "Entra", "Sale"};
+                for (size_t i = 0; i < traza.size(); ++i) {
+                    const auto& a = traza[i];
+                    std::fprintf(f, "%zu hebra=%d %s %s turno=%ld\n", i, a.hebra,
+                                 a.tipo == Tipo::Lectora ? "L" : "E",
+                                 acciones[static_cast<int>(a.accion)], a.turno);
+                }
+                std::fclose(f);
+            }
+        }
     }
     std::printf("correcto=%s\n", correcto ? "SI" : "NO");
     return correcto ? 0 : 1;

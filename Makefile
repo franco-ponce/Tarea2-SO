@@ -1,9 +1,9 @@
 CXX      ?= g++
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -pthread
 
-# Se agregan monitor_rw.cpp, control_atomico_rw.cpp y verificador.cpp en las etapas siguientes.
-SRCS = rw.cpp
-HDRS = comun.h
+# Se agregan control_atomico_rw.cpp y verificador.cpp en las etapas siguientes.
+SRCS = rw.cpp monitor_rw.cpp
+HDRS = comun.h monitor_rw.h
 
 rw: $(SRCS) $(HDRS)
 	$(CXX) $(CXXFLAGS) $(SRCS) -o rw
