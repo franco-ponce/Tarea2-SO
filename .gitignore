@@ -1,0 +1,4 @@
+rw
+rw_tsan
+*.o
+resultados/
