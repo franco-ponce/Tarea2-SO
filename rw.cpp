@@ -4,6 +4,7 @@
 
 #include "comun.h"
 #include "monitor_rw.h"
+#include "verificador.h"
 
 #include <algorithm>
 #include <atomic>
@@ -366,9 +367,25 @@ int main(int argc, char** argv) {
                     fallos_lec.recurso_ocupado + fallos_lec.escritoras_esperando + fallos_lec.cas_fallido +
                     fallos_esc.recurso_ocupado + fallos_esc.cas_fallido);
     }
+    bool politica_ok = true;
     if (monitor != nullptr && p.con_traza) {
         std::vector<AnotacionTraza> traza = monitor->obtener_traza();
-        std::printf("anotaciones_traza=%zu (esperado %ld)\n", traza.size(), 3 * (p.L + p.E) * p.K);
+        const long anotaciones_esperadas = 3 * (p.L + p.E) * p.K;
+        std::printf("anotaciones_traza=%zu (esperado %ld)\n", traza.size(), anotaciones_esperadas);
+
+        ResultadoVerificacion v = verificar_traza(traza, p.politica);
+        if (static_cast<long>(traza.size()) != anotaciones_esperadas) {
+            v.politica_ok = false;
+            std::printf("violacion: la traza no tiene 3 anotaciones por solicitud\n");
+        }
+        politica_ok = v.politica_ok;
+        for (const auto& viol : v.violaciones)
+            std::printf("violacion: anotacion=%zu regla=\"%s\"\n", viol.indice, viol.regla.c_str());
+        if (v.total_violaciones > static_cast<long>(v.violaciones.size()))
+            std::printf("violacion: ... (%ld en total)\n", v.total_violaciones);
+        std::printf("politica_ok=%s\n", v.politica_ok ? "SI" : "NO");
+        std::printf("evidencia=%ld (%s)\n", v.evidencia, v.descripcion_evidencia);
+
         // Volcado opcional de la traza (para inspeccionarla a mano): RW_VOLCAR_TRAZA=archivo
         if (const char* ruta = std::getenv("RW_VOLCAR_TRAZA")) {
             if (FILE* f = std::fopen(ruta, "w")) {
@@ -384,5 +401,5 @@ int main(int argc, char** argv) {
         }
     }
     std::printf("correcto=%s\n", correcto ? "SI" : "NO");
-    return correcto ? 0 : 1;
+    return correcto && politica_ok ? 0 : 1;
 }

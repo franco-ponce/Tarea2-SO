@@ -1,9 +1,9 @@
 CXX      ?= g++
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -pthread
 
-# Se agregan control_atomico_rw.cpp y verificador.cpp en las etapas siguientes.
-SRCS = rw.cpp monitor_rw.cpp
-HDRS = comun.h monitor_rw.h
+# Se agrega control_atomico_rw.cpp en la Etapa 5.
+SRCS = rw.cpp monitor_rw.cpp verificador.cpp
+HDRS = comun.h monitor_rw.h verificador.h
 
 rw: $(SRCS) $(HDRS)
 	$(CXX) $(CXXFLAGS) $(SRCS) -o rw
@@ -12,7 +12,15 @@ rw: $(SRCS) $(HDRS)
 rw_tsan: $(SRCS) $(HDRS)
 	$(CXX) -std=c++17 -O1 -g -Wall -Wextra -pthread -fsanitize=thread $(SRCS) -o rw_tsan
 
-clean:
-	rm -f rw rw_tsan
+# Programa de prueba separado (con su propio main) para el verificador de traza.
+prueba_verificador: prueba_verificador.cpp verificador.cpp verificador.h comun.h
+	$(CXX) $(CXXFLAGS) prueba_verificador.cpp verificador.cpp -o prueba_verificador
 
-.PHONY: clean
+pruebas: rw prueba_verificador
+	./prueba_verificador
+	bash pruebas_parametros.sh
+
+clean:
+	rm -f rw rw_tsan prueba_verificador
+
+.PHONY: clean pruebas
