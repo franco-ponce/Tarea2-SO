@@ -3,6 +3,7 @@
 // Uso: ./rw <modo> <politica> <L> <E> <K> <dur_lec_us> <dur_esc_us> [notraza]
 
 #include "comun.h"
+#include "control_atomico_rw.h"
 #include "monitor_rw.h"
 #include "verificador.h"
 
@@ -11,13 +12,11 @@
 #include <cerrno>
 #include <chrono>
 #include <climits>
-#include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <system_error>
 #include <thread>
@@ -127,43 +126,20 @@ static bool leer_parametros(int argc, char** argv, Parametros& p) {
     return true;
 }
 
-// ---------------------------------------------------------------------------
-// Control provisorio: exclusión total con mutex + variable de condición. Lo usa
-// el modo atomic hasta que exista ControlAtomicoRW (Etapa 5).
-// ---------------------------------------------------------------------------
-
-class ControlProvisorio : public ControlRW {
-public:
-    void entrar_lectura() override { entrar(); }
-    void salir_lectura() override { salir(); }
-    void entrar_escritura() override { entrar(); }
-    void salir_escritura() override { salir(); }
-private:
-    void entrar() {
-        std::unique_lock<std::mutex> lk(m);
-        cv.wait(lk, [&] { return !ocupado; });
-        ocupado = true;
-    }
-    void salir() {
-        std::unique_lock<std::mutex> lk(m);
-        ocupado = false;
-        cv.notify_one();
-    }
-    std::mutex m;
-    std::condition_variable cv;
-    bool ocupado = false;
-};
-
-// Crea el control según el modo. Si es un monitor, deja además un puntero a él en
-// 'monitor' para poder leer la traza al final.
-static std::unique_ptr<ControlRW> crear_control(const Parametros& p, MonitorRW*& monitor) {
+// Crea el control según el modo. Deja además un puntero al objeto concreto (monitor o
+// atómico) para leer la traza o la palabra final.
+static std::unique_ptr<ControlRW> crear_control(const Parametros& p, MonitorRW*& monitor,
+                                                ControlAtomicoRW*& atomico) {
     monitor = nullptr;
+    atomico = nullptr;
     if (p.modo == Modo::Cond) {
         auto mon = std::make_unique<MonitorRW>(p.politica, p.con_traza);
         monitor = mon.get();
         return mon;
     }
-    return std::make_unique<ControlProvisorio>();
+    auto at = std::make_unique<ControlAtomicoRW>();
+    atomico = at.get();
+    return at;
 }
 
 // ---------------------------------------------------------------------------
@@ -275,7 +251,8 @@ int main(int argc, char** argv) {
     const int N = L + E;
 
     MonitorRW* monitor = nullptr;
-    std::unique_ptr<ControlRW> ctl = crear_control(p, monitor);
+    ControlAtomicoRW* atomico = nullptr;
+    std::unique_ptr<ControlRW> ctl = crear_control(p, monitor, atomico);
     Registro reg;
     Diagnostico diag;
     std::vector<ResultadoHebra> resultados(N);
@@ -338,8 +315,11 @@ int main(int argc, char** argv) {
     }
 
     const long esperado = p.E * p.K;
+    // En modo atomic, al terminar la palabra debe volver a 0 (sin lectoras, escritora ni esperando).
+    const bool palabra_ok = atomico == nullptr || atomico->palabra() == 0;
     const bool correcto = reg.version == esperado && reg.doble_version == 2 * esperado &&
-                          diag.inconsistencias.load() == 0 && diag.violaciones_exclusion.load() == 0;
+                          diag.inconsistencias.load() == 0 && diag.violaciones_exclusion.load() == 0 &&
+                          palabra_ok;
 
     std::printf("modo=%s\n", p.modo == Modo::Cond ? "cond" : "atomic");
     std::printf("politica=%s\n", nombre_politica(p.politica));
@@ -359,6 +339,7 @@ int main(int argc, char** argv) {
     std::printf("espera_escritoras_prom_us=%.3f espera_escritoras_max_us=%.3f\n",
                 ops_esc ? esp_esc_total / ops_esc : 0.0, esp_esc_max);
     if (p.modo == Modo::Atomic) {
+        std::printf("palabra_final=0x%llx\n", static_cast<unsigned long long>(atomico->palabra()));
         std::printf("fallos_lectoras: recurso_ocupado=%ld escritoras_esperando=%ld cas_fallido=%ld\n",
                     fallos_lec.recurso_ocupado, fallos_lec.escritoras_esperando, fallos_lec.cas_fallido);
         std::printf("fallos_escritoras: recurso_ocupado=%ld cas_fallido=%ld\n",
